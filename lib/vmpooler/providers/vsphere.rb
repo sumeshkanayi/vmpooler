@@ -132,7 +132,9 @@ module Vmpooler
         end
 
         def create_vm(pool_name, new_vmname)
+          puts "Under create_vm poolame is #{pool_name} and vmname #{new_vmname}"
           pool = pool_config(pool_name)
+          puts "Pool is #{pool}"
           raise("Pool #{pool_name} does not exist for the provider #{name}") if pool.nil?
           vm_hash = nil
           @connection_pool.with_metrics do |pool_object|
@@ -141,7 +143,9 @@ module Vmpooler
             template_path = pool['template']
             target_folder_path = pool['folder']
             target_datastore = pool['datastore']
+            puts "Find target cluster name from config"
             target_cluster_name = get_target_cluster_from_config(pool_name)
+            puts "target cluster name is #{target_cluster_name}"
             target_datacenter_name = get_target_datacenter_from_config(pool_name)
 
             # Extract the template VM name from the full path
@@ -169,8 +173,10 @@ module Vmpooler
                 { key: 'guestinfo.hostname', value: new_vmname }
               ]
             )
+            puts "config spec is #{config_spec}"
 
             # Choose a cluster/host to place the new VM on
+            puts "find target host object by calling find_least_used_host dc is #{target_datacenter_name}"
             target_host_object = find_least_used_host(target_cluster_name, connection, target_datacenter_name)
 
             # Put the VM in the specified folder and resource pool
@@ -580,7 +586,9 @@ module Vmpooler
         end
 
         def find_least_used_host(cluster, connection, datacentername)
+          puts "find cluster #{cluster} dc #{datacentername}"
           cluster_object = find_cluster(cluster, connection, datacentername)
+          puts "cluster object #{cluster_object} now get host cpu utilization by calling get_cluster_host_utilization"
           target_hosts = get_cluster_host_utilization(cluster_object)
           raise("There is no host candidate in vcenter that meets all the required conditions, check that the cluster has available hosts in a 'green' status, not in maintenance mode and not overloaded CPU and memory'") if target_hosts.empty?
           least_used_host = target_hosts.sort[0][1]
@@ -590,10 +598,14 @@ module Vmpooler
         def find_cluster(cluster, connection, datacentername)
           datacenter = connection.serviceInstance.find_datacenter(datacentername)
           raise("Datacenter #{datacentername} does not exist") if datacenter.nil?
+          cluster_name=datacenter.hostFolder.children.find { |cluster_object| cluster_object.name == cluster }
+          puts "cluster name is #{cluster_name}"
           datacenter.hostFolder.children.find { |cluster_object| cluster_object.name == cluster }
+
         end
 
         def get_cluster_host_utilization(cluster, model = nil)
+          puts "in get_cluster_host_utilization cluster is #{cluster}"
           cluster_hosts = []
           cluster.host.each do |host|
             host_usage = get_host_utilization(host, model)

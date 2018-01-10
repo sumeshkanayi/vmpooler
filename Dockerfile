@@ -26,4 +26,5 @@ COPY . /var/lib/vmpooler
 COPY pooler_start.sh /pooler_start.sh
 RUN chmod 777 /pooler_start.sh
 ENV VMPOOLER_LOG /var/log/vmpooler.log
+ENV VMPOOLER_DEBUG true
 ENTRYPOINT /pooler_start.sh
